@@ -9,8 +9,10 @@ if [[ -z "${CODE:-}" ]]; then
 fi
 
 SERVER="${SERVER:-smart}"
+DAEMON=/opt/expressvpn/bin/expressvpn-daemon
+export LD_LIBRARY_PATH=/opt/expressvpn/lib
 
-# Unmount Docker-managed resolv.conf so ExpressVPN can manage DNS
+# Unmount container-managed resolv.conf so ExpressVPN can manage DNS
 if [[ -f /etc/resolv.conf ]]; then
   cp /etc/resolv.conf /etc/resolv.conf.bak
   umount /etc/resolv.conf &>/dev/null || true
@@ -18,21 +20,10 @@ if [[ -f /etc/resolv.conf ]]; then
   rm -f /etc/resolv.conf.bak
 fi
 
-# Start ExpressVPN daemon via sysvinit
-log "Starting ExpressVPN service..."
-service_name=""
-if [[ -f /etc/init.d/expressvpn-service ]]; then
-  service_name="expressvpn-service"
-elif [[ -f /etc/init.d/expressvpn ]]; then
-  service_name="expressvpn"
-fi
-
-if [[ -z "$service_name" ]]; then
-  log "ERROR: Cannot find ExpressVPN init script"
-  exit 1
-fi
-
-service "$service_name" start
+# Start ExpressVPN daemon directly (bypass sysvinit/systemd)
+log "Starting ExpressVPN daemon..."
+$DAEMON &
+DAEMON_PID=$!
 
 # Wait for daemon to be ready
 log "Waiting for daemon..."
