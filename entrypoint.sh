@@ -9,7 +9,6 @@ if [[ -z "${CODE:-}" ]]; then
 fi
 
 SERVER="${SERVER:-smart}"
-DAEMON=/opt/expressvpn/bin/expressvpn-daemon
 export LD_LIBRARY_PATH=/opt/expressvpn/lib
 
 # Unmount container-managed resolv.conf so ExpressVPN can manage DNS
@@ -20,14 +19,13 @@ if [[ -f /etc/resolv.conf ]]; then
   rm -f /etc/resolv.conf.bak
 fi
 
-# Start ExpressVPN daemon directly (bypass sysvinit/systemd)
-log "Starting ExpressVPN daemon..."
-$DAEMON &
-DAEMON_PID=$!
+# Start ExpressVPN daemon via sysvinit
+log "Starting ExpressVPN service..."
+service expressvpn-service start || service expressvpn start
 
 # Wait for daemon to be ready
 log "Waiting for daemon..."
-for i in $(seq 1 10); do
+for i in $(seq 1 15); do
   if expressvpnctl status >/dev/null 2>&1; then
     break
   fi
@@ -35,7 +33,7 @@ for i in $(seq 1 10); do
 done
 
 if ! expressvpnctl status >/dev/null 2>&1; then
-  log "ERROR: ExpressVPN daemon not responding"
+  log "ERROR: ExpressVPN daemon not responding after 30s"
   exit 1
 fi
 

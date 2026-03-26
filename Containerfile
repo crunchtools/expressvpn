@@ -1,19 +1,19 @@
-FROM registry.fedoraproject.org/fedora:42
+FROM ubuntu:22.04
 
 LABEL maintainer="fatherlinux <scott.mccarty@crunchtools.com>"
 LABEL description="ExpressVPN + tinyproxy for Playwright egress routing"
 
 ARG EXPRESSVPN_VERSION=5.1.0.12141
 
-RUN dnf install -y tinyproxy procps-ng iproute iptables initscripts && dnf clean all
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+        tinyproxy curl ca-certificates procps iproute2 iptables kmod && \
+    rm -rf /var/lib/apt/lists/*
 
-# ExpressVPN v5 universal installer (sysvinit for container use)
-# Fedora has no update-rc.d (Debian-ism) — stub it; initscripts provides 'service' command
-RUN mkdir -p /etc/init.d && \
-    printf '#!/bin/sh\nexit 0\n' > /usr/sbin/update-rc.d && chmod +x /usr/sbin/update-rc.d && \
-    curl -fsSL https://www.expressvpn.works/clients/linux/expressvpn-linux-universal-${EXPRESSVPN_VERSION}_release.run -o /tmp/expressvpn.run && \
+# ExpressVPN v5 universal installer
+RUN curl -fsSL https://www.expressvpn.works/clients/linux/expressvpn-linux-universal-${EXPRESSVPN_VERSION}_release.run -o /tmp/expressvpn.run && \
     sh /tmp/expressvpn.run --accept --quiet --noprogress -- --no-gui --sysvinit --force-dependencies && \
-    rm -f /tmp/expressvpn.run /usr/sbin/update-rc.d
+    rm -f /tmp/expressvpn.run
 
 # Configure tinyproxy: listen on all interfaces, allow container networks
 RUN sed -i 's/^Listen .*/Listen 0.0.0.0/' /etc/tinyproxy/tinyproxy.conf && \
