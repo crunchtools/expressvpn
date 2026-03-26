@@ -8,7 +8,9 @@ ARG EXPRESSVPN_VERSION=5.1.0.12141
 RUN dnf install -y tinyproxy procps-ng iproute iptables && dnf clean all
 
 # ExpressVPN v5 universal installer (sysvinit for container use)
-RUN curl -fsSL https://www.expressvpn.works/clients/linux/expressvpn-linux-universal-${EXPRESSVPN_VERSION}_release.run -o /tmp/expressvpn.run && \
+# Fedora 42 has no /etc/init.d — create it so sysvinit installer can drop its script there
+RUN mkdir -p /etc/init.d && \
+    curl -fsSL https://www.expressvpn.works/clients/linux/expressvpn-linux-universal-${EXPRESSVPN_VERSION}_release.run -o /tmp/expressvpn.run && \
     sh /tmp/expressvpn.run --accept --quiet --noprogress -- --no-gui --sysvinit --force-dependencies && \
     rm -f /tmp/expressvpn.run
 
