@@ -3,12 +3,14 @@ FROM registry.fedoraproject.org/fedora:42
 LABEL maintainer="fatherlinux <scott.mccarty@crunchtools.com>"
 LABEL description="ExpressVPN + tinyproxy for Playwright egress routing"
 
-RUN dnf install -y tinyproxy procps-ng iproute iptables expect && dnf clean all
+ARG EXPRESSVPN_VERSION=5.1.0.12141
 
-# ExpressVPN Linux CLI
-RUN curl -fsSL https://www.expressvpn.works/clients/linux/expressvpn_3.87.0.3-1.x86_64.rpm -o /tmp/expressvpn.rpm && \
-    dnf install -y /tmp/expressvpn.rpm && \
-    rm -f /tmp/expressvpn.rpm
+RUN dnf install -y tinyproxy procps-ng iproute iptables && dnf clean all
+
+# ExpressVPN v5 universal installer (sysvinit for container use)
+RUN curl -fsSL https://www.expressvpn.works/clients/linux/expressvpn-linux-universal-${EXPRESSVPN_VERSION}_release.run -o /tmp/expressvpn.run && \
+    sh /tmp/expressvpn.run --accept --quiet --noprogress -- --no-gui --sysvinit && \
+    rm -f /tmp/expressvpn.run
 
 # Configure tinyproxy: listen on all interfaces, allow container networks
 RUN sed -i 's/^Listen .*/Listen 0.0.0.0/' /etc/tinyproxy/tinyproxy.conf && \
