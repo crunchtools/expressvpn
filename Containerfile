@@ -7,7 +7,8 @@ ARG EXPRESSVPN_VERSION=5.1.0.12141
 
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        tinyproxy curl ca-certificates procps iproute2 iptables kmod && \
+        tinyproxy curl ca-certificates procps psmisc iproute2 iptables kmod \
+        libatomic1 libglib2.0-0 libbrotli1 && \
     rm -rf /var/lib/apt/lists/*
 
 # ExpressVPN v5 universal installer
