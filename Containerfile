@@ -22,7 +22,8 @@ RUN sed -i 's/^Listen .*/Listen 0.0.0.0/' /etc/tinyproxy/tinyproxy.conf && \
     echo 'Allow 10.0.0.0/8' >> /etc/tinyproxy/tinyproxy.conf && \
     echo 'Allow 172.16.0.0/12' >> /etc/tinyproxy/tinyproxy.conf && \
     echo 'Allow 192.168.0.0/16' >> /etc/tinyproxy/tinyproxy.conf && \
-    echo 'Allow 127.0.0.0/8' >> /etc/tinyproxy/tinyproxy.conf
+    echo 'Allow 127.0.0.0/8' >> /etc/tinyproxy/tinyproxy.conf && \
+    mkdir -p /var/log/tinyproxy && chown tinyproxy:tinyproxy /var/log/tinyproxy
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
