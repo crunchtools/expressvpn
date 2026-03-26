@@ -5,10 +5,10 @@ LABEL description="ExpressVPN + tinyproxy for Playwright egress routing"
 
 ARG EXPRESSVPN_VERSION=5.1.0.12141
 
-RUN dnf install -y tinyproxy procps-ng iproute iptables && dnf clean all
+RUN dnf install -y tinyproxy procps-ng iproute iptables initscripts && dnf clean all
 
 # ExpressVPN v5 universal installer (sysvinit for container use)
-# Fedora has no /etc/init.d or update-rc.d (Debian-isms) — stub them for the installer
+# Fedora has no update-rc.d (Debian-ism) — stub it; initscripts provides 'service' command
 RUN mkdir -p /etc/init.d && \
     printf '#!/bin/sh\nexit 0\n' > /usr/sbin/update-rc.d && chmod +x /usr/sbin/update-rc.d && \
     curl -fsSL https://www.expressvpn.works/clients/linux/expressvpn-linux-universal-${EXPRESSVPN_VERSION}_release.run -o /tmp/expressvpn.run && \
