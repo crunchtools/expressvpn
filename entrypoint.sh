@@ -79,6 +79,9 @@ done
 
 log "VPN Status: $(expressvpnctl status 2>/dev/null || echo 'unknown')"
 
+# Add tinyproxy user to expressvpn group so Network Lock allows its traffic
+usermod -aG expressvpn tinyproxy 2>/dev/null || true
+
 # Start tinyproxy in foreground
 log "Starting tinyproxy on port 8888..."
 exec tinyproxy -d
