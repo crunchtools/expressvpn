@@ -12,7 +12,7 @@ RUN apt-get update && \
 
 # ExpressVPN v5 universal installer
 RUN curl -fsSL https://www.expressvpn.works/clients/linux/expressvpn-linux-universal-${EXPRESSVPN_VERSION}_release.run -o /tmp/expressvpn.run && \
-    sh /tmp/expressvpn.run --accept --quiet --noprogress -- --no-gui --sysvinit --force-dependencies && \
+    sh /tmp/expressvpn.run --accept --quiet --noprogress -- --no-gui --sysvinit && \
     rm -f /tmp/expressvpn.run
 
 # Configure tinyproxy: listen on all interfaces, allow container networks
