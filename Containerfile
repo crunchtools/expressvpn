@@ -9,7 +9,7 @@ RUN dnf install -y tinyproxy procps-ng iproute iptables && dnf clean all
 
 # ExpressVPN v5 universal installer (sysvinit for container use)
 RUN curl -fsSL https://www.expressvpn.works/clients/linux/expressvpn-linux-universal-${EXPRESSVPN_VERSION}_release.run -o /tmp/expressvpn.run && \
-    sh /tmp/expressvpn.run --accept --quiet --noprogress -- --no-gui --sysvinit && \
+    sh /tmp/expressvpn.run --accept --quiet --noprogress -- --no-gui --sysvinit --force-dependencies && \
     rm -f /tmp/expressvpn.run
 
 # Configure tinyproxy: listen on all interfaces, allow container networks
