@@ -6,6 +6,15 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- Added `.specify/memory/constitution.md` as a v1.18.0 manifest: it holds
+  only what is specific to this repo; fleet and profile rules apply by
+  reference.
+- Constitution validation is pinned to the inherited release via
+  `.github/workflows/constitution.yml`.
+- Dependabot auto-merges GitHub Actions minor and patch updates.
+
 ## [1.0.0] - 2026-09-20
 
 First tagged release. This image has been running in production since
