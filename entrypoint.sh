@@ -79,6 +79,54 @@ done
 
 log "VPN Status: $(expressvpnctl status 2>/dev/null || echo 'unknown')"
 
+# A connection that reports Connected can still have a dead tunnel resolver.
+# After every host reboot the daemon said "Connected to usa-chicago" with tun0
+# up and resolv.conf naming the right resolver, and nothing in the container
+# could resolve a name until the unit was restarted by hand — so tinyproxy
+# spent the week serving an unusable tunnel. Network Lock means resolv.conf
+# can only name the tunnel's own resolver, so a name that resolves here
+# resolved through the tunnel. Prove that before serving anything.
+resolver=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf 2>/dev/null || true)
+
+# Each probe carries its own timeout and each wait its own deadline. An
+# unresponsive resolver makes getent block for the full resolver timeout, so
+# without both bounds a dead tunnel would stretch startup to minutes and then
+# do it again on every Restart=always cycle.
+wait_for_tunnel_dns() {
+  local deadline=$(( SECONDS + $1 )) name
+  while (( SECONDS < deadline )); do
+    for name in cloudflare.com github.com; do
+      if timeout 3 getent hosts "${name}" >/dev/null 2>&1; then
+        return 0
+      fi
+    done
+    sleep 3
+  done
+  return 1
+}
+
+if ! wait_for_tunnel_dns 30; then
+  log "In-tunnel DNS via ${resolver:-unknown} is not answering; reconnecting"
+  if ! output=$(expressvpnctl disconnect 2>&1); then
+    log "disconnect before reconnect reported: ${output}"
+  fi
+  if ! output=$(expressvpnctl connect "${SERVER}" 2>&1); then
+    log "reconnect reported: ${output}"
+  fi
+  for i in $(seq 1 15); do
+    if [[ "$(expressvpnctl get connectionstate 2>/dev/null || true)" == "Connected" ]]; then
+      break
+    fi
+    sleep 2
+  done
+  if ! wait_for_tunnel_dns 30; then
+    log "ERROR: tunnel is up but in-tunnel DNS via ${resolver:-unknown} never answered"
+    exit 1
+  fi
+fi
+
+log "In-tunnel DNS answering via ${resolver:-unknown}"
+
 # Add tinyproxy user to expressvpn group so Network Lock allows its traffic
 usermod -aG expressvpn tinyproxy 2>/dev/null || true
 
