@@ -88,35 +88,41 @@ log "VPN Status: $(expressvpnctl status 2>/dev/null || echo 'unknown')"
 # resolved through the tunnel. Prove that before serving anything.
 resolver=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf 2>/dev/null || true)
 
-tunnel_dns_answers() {
-  local name
-  for name in cloudflare.com github.com; do
-    if getent hosts "${name}" >/dev/null 2>&1; then
-      return 0
-    fi
+# Each probe carries its own timeout and each wait its own deadline. An
+# unresponsive resolver makes getent block for the full resolver timeout, so
+# without both bounds a dead tunnel would stretch startup to minutes and then
+# do it again on every Restart=always cycle.
+wait_for_tunnel_dns() {
+  local deadline=$(( SECONDS + $1 )) name
+  while (( SECONDS < deadline )); do
+    for name in cloudflare.com github.com; do
+      if timeout 3 getent hosts "${name}" >/dev/null 2>&1; then
+        return 0
+      fi
+    done
+    sleep 3
   done
   return 1
 }
 
-for attempt in 1 2; do
-  for i in $(seq 1 10); do
-    tunnel_dns_answers && break 2
-    sleep 3
-  done
-  log "In-tunnel DNS via ${resolver:-unknown} is not answering; reconnecting (attempt ${attempt})"
-  expressvpnctl disconnect >/dev/null 2>&1 || true
-  expressvpnctl connect "${SERVER}" >/dev/null 2>&1 || true
+if ! wait_for_tunnel_dns 30; then
+  log "In-tunnel DNS via ${resolver:-unknown} is not answering; reconnecting"
+  if ! output=$(expressvpnctl disconnect 2>&1); then
+    log "disconnect before reconnect reported: ${output}"
+  fi
+  if ! output=$(expressvpnctl connect "${SERVER}" 2>&1); then
+    log "reconnect reported: ${output}"
+  fi
   for i in $(seq 1 15); do
     if [[ "$(expressvpnctl get connectionstate 2>/dev/null || true)" == "Connected" ]]; then
       break
     fi
     sleep 2
   done
-done
-
-if ! tunnel_dns_answers; then
-  log "ERROR: tunnel is up but in-tunnel DNS via ${resolver:-unknown} never answered"
-  exit 1
+  if ! wait_for_tunnel_dns 30; then
+    log "ERROR: tunnel is up but in-tunnel DNS via ${resolver:-unknown} never answered"
+    exit 1
+  fi
 fi
 
 log "In-tunnel DNS answering via ${resolver:-unknown}"
