@@ -79,6 +79,48 @@ done
 
 log "VPN Status: $(expressvpnctl status 2>/dev/null || echo 'unknown')"
 
+# A connection that reports Connected can still have a dead tunnel resolver.
+# After every host reboot the daemon said "Connected to usa-chicago" with tun0
+# up and resolv.conf naming the right resolver, and nothing in the container
+# could resolve a name until the unit was restarted by hand — so tinyproxy
+# spent the week serving an unusable tunnel. Network Lock means resolv.conf
+# can only name the tunnel's own resolver, so a name that resolves here
+# resolved through the tunnel. Prove that before serving anything.
+resolver=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf 2>/dev/null || true)
+
+tunnel_dns_answers() {
+  local name
+  for name in cloudflare.com github.com; do
+    if getent hosts "${name}" >/dev/null 2>&1; then
+      return 0
+    fi
+  done
+  return 1
+}
+
+for attempt in 1 2; do
+  for i in $(seq 1 10); do
+    tunnel_dns_answers && break 2
+    sleep 3
+  done
+  log "In-tunnel DNS via ${resolver:-unknown} is not answering; reconnecting (attempt ${attempt})"
+  expressvpnctl disconnect >/dev/null 2>&1 || true
+  expressvpnctl connect "${SERVER}" >/dev/null 2>&1 || true
+  for i in $(seq 1 15); do
+    if [[ "$(expressvpnctl get connectionstate 2>/dev/null || true)" == "Connected" ]]; then
+      break
+    fi
+    sleep 2
+  done
+done
+
+if ! tunnel_dns_answers; then
+  log "ERROR: tunnel is up but in-tunnel DNS via ${resolver:-unknown} never answered"
+  exit 1
+fi
+
+log "In-tunnel DNS answering via ${resolver:-unknown}"
+
 # Add tinyproxy user to expressvpn group so Network Lock allows its traffic
 usermod -aG expressvpn tinyproxy 2>/dev/null || true
 
