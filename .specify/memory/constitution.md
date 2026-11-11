@@ -3,7 +3,7 @@
 > **Version:** 1.0.0
 > **Ratified:** 2026-10-02
 > **Status:** Active
-> **Inherits:** [crunchtools/constitution](https://github.com/crunchtools/constitution) v1.31.0
+> **Inherits:** [crunchtools/constitution](https://github.com/crunchtools/constitution) v1.39.1
 > **Profile:** Container Image
 
 This file holds what is specific to the expressvpn image. The fleet rules and
@@ -14,7 +14,7 @@ against this repo's files by `constitution.yml`. They are not restated here.
 
 ExpressVPN client plus tinyproxy, giving Playwright an egress route through
 the VPN: other containers point their HTTP proxy at this one. Published to
-`quay.io/crunchtools/expressvpn` and `ghcr.io/crunchtools/expressvpn`.
+`quay.io/crunchtools/expressvpn`.
 
 ## Base Image Deviation
 

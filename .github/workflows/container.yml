@@ -1,0 +1,27 @@
+name: Container
+on:
+  pull_request:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  schedule:
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+permissions: {}
+jobs:
+  container:
+    uses: crunchtools/constitution/.github/workflows/container-release.yml@v1.39.1
+    permissions:
+      contents: read
+      pull-requests: read
+    with:
+      image: quay.io/crunchtools/expressvpn
+      # A VPN cannot connect in CI (no activation code, TUN device or NET_ADMIN).
+      # The gate proves the entrypoint parses and fails closed, and that every
+      # production binary and its shared libraries load. Not covered: activation,
+      # connecting, Network Lock, in-tunnel DNS, tinyproxy serving through the tunnel.
+      boot: command
+      boot-command: bash tests/image/boot-gate.sh "$IMAGE"
+    secrets:
+      QUAY_USERNAME: ${{ secrets.QUAY_USERNAME }}
+      QUAY_PASSWORD: ${{ secrets.QUAY_PASSWORD }}
