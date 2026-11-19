@@ -30,5 +30,17 @@ ignore:
   # expiry on an ignore rule, so this comment is the expiry — re-read it on
   # every EXPRESSVPN_VERSION bump, drop this file when the finding is gone,
   # and narrow it if a finding ever appears here that we can act on.
-  - package:
+  #
+  # Scoped to the two Criticals the gate fails on, at this path only, so a new
+  # Critical in the binary still fails the build and the Highs and Mediums
+  # stay visible in the report. CVE-2023-45288 is GO-2024-2887's alias; both
+  # are listed because grype reports whichever ID its database matched.
+  - vulnerability: GO-2024-2887
+    package:
+      location: "/opt/expressvpn/bin/expressvpn-decode-legacy-settings"
+  - vulnerability: CVE-2023-45288
+    package:
+      location: "/opt/expressvpn/bin/expressvpn-decode-legacy-settings"
+  - vulnerability: GO-2026-6612
+    package:
       location: "/opt/expressvpn/bin/expressvpn-decode-legacy-settings"
