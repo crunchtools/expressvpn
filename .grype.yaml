@@ -1,0 +1,34 @@
+# What python-sdlc's container-scan gate (`sdlc ci`) does not judge in this
+# image. The gate runs `grype dir:` over the built image's filesystem with
+# `--only-fixed --fail-on critical`, so it reads every binary the ExpressVPN
+# installer drops as well as the packages apt installed.
+#
+# Only one kind of entry belongs here: a finding in a prebuilt binary that
+# comes out of ExpressVPN's proprietary installer, which this repo downloads
+# and cannot rebuild. Anything apt installs is fixed in the Containerfile,
+# never ignored here.
+ignore:
+  # ExpressVPN's v3/v4 settings migration shim, shipped inside
+  # expressvpn-linux-universal-5.1.0.12141_release.run and built by ExpressVPN
+  # with Go 1.20.5 (June 2023). Every other Go binary in that installer is
+  # current — expressvpn-amneziawg-go is go1.25.0, browser_helper go1.23.2 —
+  # so this one is a frozen legacy artifact, not a stale toolchain across the
+  # product. We download the installer; there is no source and no way to
+  # rebuild it, and deleting it from the image would remove a binary the
+  # daemon may still exec on first start, which cannot be tested without a
+  # live activation code.
+  #
+  # It carries two fixable Criticals, GO-2024-2887 (net/http, HTTP/2 CONTINUATION
+  # flood) and GO-2026-6612, plus eleven Highs and Mediums in the same stdlib
+  # and in golang.org/x/net v0.10.0. Nothing in this container ever invokes it:
+  # a fresh container has no legacy ExpressVPN settings to migrate, and the
+  # entrypoint only runs expressvpnctl, the daemon and tinyproxy. The binary
+  # is unreachable, so these are not exploitable here.
+  #
+  # The fix is upstream's, not ours: raise ARG EXPRESSVPN_VERSION when
+  # ExpressVPN ships an installer with this binary rebuilt. grype has no
+  # expiry on an ignore rule, so this comment is the expiry — re-read it on
+  # every EXPRESSVPN_VERSION bump, drop this file when the finding is gone,
+  # and narrow it if a finding ever appears here that we can act on.
+  - package:
+      location: "/opt/expressvpn/bin/expressvpn-decode-legacy-settings"
