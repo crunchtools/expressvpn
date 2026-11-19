@@ -17,10 +17,18 @@ All notable changes to this project are documented here. The format follows
   that installer and cannot rebuild the binary, and nothing in this container
   invokes it — a fresh container has no legacy settings to migrate, and the
   entrypoint only runs `expressvpnctl`, the daemon and tinyproxy. The file
-  ignores that one path and says what would retire it: an
+  ignores those two Criticals at that one path only and says what would retire it: an
   `ARG EXPRESSVPN_VERSION` bump to an installer with the binary rebuilt. Every
   other Go binary in the installer is current (go1.25.0, go1.23.2), so this is
   one frozen artifact rather than a stale toolchain.
+
+### Changed
+
+- The container release runs constitution v1.51.0's `container-release.yml`
+  (was v1.46.0) and grants it `issues: write`, so a failed scheduled rebuild
+  opens an issue instead of only warning. A `v*` promote now also refuses an
+  image whose `version` label names a different release of this repo; this
+  image sets no `version` label of its own, so the check is inert here.
 
 ## [1.0.1] - 2026-11-11
 
