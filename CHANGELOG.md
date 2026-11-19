@@ -6,6 +6,22 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Security
+
+- `.grype.yaml` for python-sdlc's `container-scan` gate, which `sdlc ci` fails
+  on a fixable Critical. The only one in this image is in
+  `/opt/expressvpn/bin/expressvpn-decode-legacy-settings`, a v3/v4 settings
+  migration shim that ExpressVPN ships prebuilt inside the universal installer
+  and built with Go 1.20.5: GO-2024-2887 and GO-2026-6612, plus eleven lesser
+  findings in the same stdlib and in `golang.org/x/net` v0.10.0. We download
+  that installer and cannot rebuild the binary, and nothing in this container
+  invokes it — a fresh container has no legacy settings to migrate, and the
+  entrypoint only runs `expressvpnctl`, the daemon and tinyproxy. The file
+  ignores that one path and says what would retire it: an
+  `ARG EXPRESSVPN_VERSION` bump to an installer with the binary rebuilt. Every
+  other Go binary in the installer is current (go1.25.0, go1.23.2), so this is
+  one frozen artifact rather than a stale toolchain.
+
 ## [1.0.1] - 2026-11-11
 
 ### Fixed
