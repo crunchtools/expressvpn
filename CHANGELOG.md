@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [1.0.2] - 2026-11-25
+
 ### Security
 
 - `.grype.yaml` for python-sdlc's `container-scan` gate, which `sdlc ci` fails
