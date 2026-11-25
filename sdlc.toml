@@ -4,6 +4,8 @@ repo-kinds = ["container-image"]
 [tool.sdlc.image]
 # Written by crunchtools/sdlc's scripts/convert_repo.py: moved from the workflows.
 image = "quay.io/crunchtools/expressvpn"
+# iptables-nft is RHEL AppStream, outside UBI and EPEL; the build registers.
+rhsm = true
 # The VPN cannot connect in CI, so the old outside-driver gate (podman from the
 # host, not enforced by sdlc) is now the boot-gate check below, run inside the
 # image the PR builds.

@@ -4,3 +4,9 @@ path = "entrypoint.sh"
 justification = "Container entrypoint COPYed and set as ENTRYPOINT by Containerfile"
 classification = "by_design"
 
+[[exceptions]]
+check = "random_scripts"
+path = "etc/init.d/expressvpn-service"
+justification = "sysvinit script the Containerfile installs; entrypoint.sh starts the daemon through it"
+classification = "by_design"
+

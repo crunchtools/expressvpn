@@ -1,0 +1,42 @@
+#!/bin/sh
+# ExpressVPN daemon, for `service expressvpn-service start` in entrypoint.sh.
+#
+# ExpressVPN's own sysvinit script is Debian's: it starts the daemon with
+# start-stop-daemon (dpkg), which RHEL does not ship. This is the same contract
+# with no Debian tooling: start backgrounds the daemon with a pidfile, stop
+# sends it SIGINT, as upstream's STOP_SIGNAL does. `service` on RHEL runs this
+# with a scrubbed environment, so the library path is set here.
+
+DAEMON=/opt/expressvpn/bin/expressvpn-daemon
+NAME=expressvpn-service
+PIDFILE="/var/run/$NAME.pid"
+export LD_LIBRARY_PATH=/opt/expressvpn/lib
+
+running() {
+    [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null
+}
+
+case "$1" in
+start)
+    running && exit 0
+    setsid "$DAEMON" </dev/null >/dev/null 2>&1 &
+    echo $! > "$PIDFILE"
+    ;;
+stop)
+    running && kill -INT "$(cat "$PIDFILE")"
+    rm -f "$PIDFILE"
+    ;;
+status)
+    if running; then
+        echo "Program '$NAME' is running."
+    else
+        echo "Program '$NAME' is not running."
+        exit 3
+    fi
+    ;;
+*)
+    echo "Usage: $0 {start|stop|status}"
+    exit 5
+esac
+
+exit 0

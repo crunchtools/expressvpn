@@ -1,11 +1,11 @@
 # What python-sdlc's container-scan gate (`sdlc ci`) does not judge in this
 # image. The gate runs `grype dir:` over the built image's filesystem with
 # `--only-fixed --fail-on critical`, so it reads every binary the ExpressVPN
-# installer drops as well as the packages apt installed.
+# installer drops as well as the packages dnf installed.
 #
 # Only one kind of entry belongs here: a finding in a prebuilt binary that
 # comes out of ExpressVPN's proprietary installer, which this repo downloads
-# and cannot rebuild. Anything apt installs is fixed in the Containerfile,
+# and cannot rebuild. Anything dnf installs is fixed in the Containerfile,
 # never ignored here.
 ignore:
   # ExpressVPN's v3/v4 settings migration shim, shipped inside
