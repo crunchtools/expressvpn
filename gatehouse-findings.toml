@@ -63,3 +63,43 @@ merged. A pull request's `sdlc ci` gets no secret and skips this build \
 ([tool.sdlc.ci] skip in sdlc.toml). That is C6 as the fleet implements it for \
 every RHSM image, sdlc's docs/socket-audit.md included.
 """
+
+[[findings]]
+agent = "bugs"
+category = "bug"
+file = "etc/init.d/expressvpn-service"
+evidence = "setsid -f sh -c 'echo $$ > \"$1\"; exec \"$2\"' sh \"$PIDFILE\" \"$DAEMON\" \\\n    </dev/null >/dev/null 2>&1\nfor _ in 1 2 3 4 5 6 7 8 9 10; do\n    [ -s \"$PIDFILE\" ] && break\n    sleep 0.1\ndone"
+status = "not-a-bug"
+reason = """
+Upstream's contract, kept on purpose. ExpressVPN's own sysvinit script starts \
+the daemon with `start-stop-daemon --start --oknodo --background`, which \
+returns 0 once it has forked and cannot know whether the daemon stays up \
+either. Readiness is checked one layer up: entrypoint.sh polls \
+`expressvpnctl status` for 30 seconds after this and exits 1 with "daemon not \
+responding" if it never answers, so a daemon that dies on start stops the \
+container. A non-zero here would instead run the entrypoint's \
+`|| service expressvpn start` fallback, which RHEL's `service` redirects to a \
+systemctl that cannot run in the container, a worse error for the same exit. \
+A stale pidfile is harmless: `running` checks the pid with kill -0, and \
+boot-check proves a start over a stale pidfile launches the daemon.
+"""
+
+[[findings]]
+agent = "constitution"
+category = "constitution"
+file = "sdlc.toml"
+evidence = "skip = [\"container-build\", \"container-smoke\", \"container-scan\"]"
+status = "not-a-bug"
+reason = """
+The fleet's rule for a Containerfile that needs build secrets, as sdlc's \
+scripts/convert_repo.py writes it: `sdlc ci` holds no RHSM key, so it cannot \
+build this image, and a check that cannot run would exit 2 on every pull \
+request. The checks are not dropped: ci.yml's image job plans \
+container-build, container-smoke and container-scan by name, ignoring this \
+skip, and the build itself runs tests/image/boot-check.sh as its last step. \
+A gate that fails there stops the image before gated-<sha> is pushed, so \
+nothing ungated is published or promoted. What moves is when the gate runs: \
+after merge and before publication, instead of before merge. The only \
+secret-free alternative is a build that skips the RHSM layer, which would \
+check an image without iptables that never ships.
+"""
