@@ -6,22 +6,12 @@ repo-kinds = ["container-image"]
 image = "quay.io/crunchtools/expressvpn"
 # iptables-nft is RHEL AppStream, outside UBI and EPEL; the build registers.
 rhsm = true
-# The VPN cannot connect in CI, so the old outside-driver gate (podman from the
-# host, not enforced by sdlc) is now the boot-gate check below, run inside the
-# image the PR builds.
+# The VPN cannot connect in CI. tests/image/boot-check.sh runs inside the build
+# as its last step, so the image job's build is the boot gate.
 boot = "none"
-boot-none-reason = "a VPN cannot connect in CI (no activation code, TUN or NET_ADMIN); the expressvpn-image and boot-gate checks in [tool.sdlc.ci] run the image's assertions"
+boot-none-reason = "a VPN cannot connect in CI (no activation code, TUN or NET_ADMIN); the Containerfile runs tests/image/boot-check.sh as its last build step"
 
 [tool.sdlc.ci]
-checks = ["expressvpn-image", "boot-gate"]
-
-[tool.sdlc.ci.expressvpn-image]
-kind = "image-build"
-
-# Entrypoint parses and fails closed without CODE; every VPN binary and
-# tinyproxy is present with no unresolved library. argv[0] replaces the image's
-# entrypoint.
-[tool.sdlc.ci.boot-gate]
-kind = "command"
-image = "localhost/expressvpn:sdlc"
-argv = ["bash", "tests/image/boot-check.sh"]
+# The Containerfile needs RHSM build secrets that `sdlc ci` is not given. The
+# image job builds, smoke-tests and scans it, with them.
+skip = ["container-build", "container-smoke", "container-scan"]

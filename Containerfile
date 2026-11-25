@@ -67,6 +67,11 @@ RUN sed -i 's/^Listen .*/Listen 0.0.0.0/' /etc/tinyproxy/tinyproxy.conf && \
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+# The boot gate: a VPN cannot connect in CI, so the build proves what it can.
+# Here rather than in `sdlc ci`, which cannot build this image without RHSM.
+RUN --mount=type=bind,source=tests,target=/run/tests \
+    bash /run/tests/image/boot-check.sh
+
 EXPOSE 8888
 
 ENTRYPOINT ["/entrypoint.sh"]

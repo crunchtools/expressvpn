@@ -1,7 +1,7 @@
 #!/bin/bash
-# Boot gate, run INSIDE the image (the `boot-gate` check in sdlc.toml's
-# [tool.sdlc.ci]). A VPN cannot connect in CI (no activation code, no TUN
-# device, no NET_ADMIN), so this proves what can be proven: the entrypoint
+# Boot gate, run INSIDE the image as the Containerfile's last build step. A
+# VPN cannot connect in CI (no activation code, no TUN device, no NET_ADMIN),
+# so this proves what can be proven: the entrypoint
 # parses and fails closed, and every binary production runs (daemon, CLI, tunnel
 # protocols, DNS, tinyproxy) is present and has no unresolved shared library.
 # NOT covered: activation, connecting, Network Lock, in-tunnel DNS, and

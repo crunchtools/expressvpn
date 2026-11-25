@@ -25,6 +25,11 @@ All notable changes to this project are documented here. The format follows
   start/stop/status contract. RHEL's `service` wrapper asks systemctl about
   the unit first, which fails in the container with one line about
   `OPENSSL_3.4.0` from ExpressVPN's libcrypto; the start goes ahead regardless.
+- `tests/image/boot-check.sh` runs as the Containerfile's last build step
+  instead of as `sdlc ci`'s `boot-gate` check, and `sdlc ci` skips the
+  container checks: an RHSM build cannot be built without the subscription
+  secrets that only the image job holds. It now also checks the init script
+  and the CONNECT port limit.
 
 ## [1.0.2] - 2026-11-25
 
