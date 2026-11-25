@@ -10,3 +10,9 @@ path = "etc/init.d/expressvpn-service"
 justification = "sysvinit script the Containerfile installs; entrypoint.sh starts the daemon through it"
 classification = "by_design"
 
+
+[[exceptions]]
+check = "absolute_paths"
+path = "gatehouse-findings.toml"
+justification = "evidence fields quote Containerfile lines verbatim, which gatehouse matches byte for byte"
+classification = "by_design"

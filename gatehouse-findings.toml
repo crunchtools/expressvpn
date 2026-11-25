@@ -1,0 +1,65 @@
+# Gatehouse findings judged by a person or a seat, with the reason.
+
+[[findings]]
+agent = "constitution"
+category = "constitution"
+file = "Containerfile"
+evidence = "dnf install -y --nodocs \\\n    tinyproxy procps-ng psmisc iproute iptables-nft kmod \\\n    libatomic glib2 libbrotli brotli libnl3 \\\n    shadow-utils initscripts-service"
+status = "not-a-bug"
+reason = """
+S4 requires this image to be rebuilt fresh at least weekly so that errata \
+reach production, and the fleet's ci.yml rebuilds it on that schedule and \
+when the parent moves. Exact RPM versions would make every such rebuild ship \
+the same packages and no errata, the trade crunchtools/sdlc judged the same \
+way for its own `dnf install` line. The packages come only from Red Hat's \
+signed repositories and EPEL 10 with gpgcheck against the vendored key, the \
+fleet has no RPM lockfile tooling, and container-scan judges what was \
+resolved on every build. The Ubuntu line this replaces was unpinned too.
+"""
+
+[[findings]]
+agent = "constitution"
+category = "constitution"
+file = "Containerfile"
+evidence = "FROM registry.access.redhat.com/ubi10/ubi"
+status = "not-a-bug"
+reason = """
+sdlc's image job verifies the parent's Red Hat signature and builds FROM the \
+digest it resolved, so the bytes built are pinned and recorded at build time; \
+the tag is what the 6-hourly parent-moved check and the weekly rebuild follow \
+to pick up UBI errata, which S4 requires. A digest in this file would freeze \
+the base and make those rebuilds no-ops, the reasoning crunchtools/sdlc \
+recorded for its own tagged base.
+"""
+
+[[findings]]
+agent = "constitution"
+category = "constitution"
+file = "Containerfile"
+evidence = "--activationkey=\"$(cat /run/secrets/activation_key)\""
+status = "not-a-bug"
+reason = """
+The key reaches the build as a file, a BuildKit secret mount that is never \
+written to a layer, as P1 asks. subscription-manager takes an activation key \
+only as an argument: it has no file or stdin form. The argument exists only \
+inside this build step's own PID namespace for the seconds the registration \
+takes, where nothing else runs to read it, and the build log records the \
+instruction text, not the expanded value. This is the fleet's RHSM idiom, the \
+same line crunchtools/rhel10-bootc-server builds with.
+"""
+
+[[findings]]
+agent = "constitution"
+category = "constitution"
+file = "Containerfile"
+evidence = "RUN --mount=type=secret,id=activation_key \\\n    --mount=type=secret,id=org_id <<'EOF'\n...\nsubscription-manager register \\"
+status = "not-a-bug"
+reason = """
+Pull request code never reaches these secrets. The only job that holds \
+RHSM_ACTIVATION_KEY is ci.yml's `image`, which runs only when \
+`github.event_name != 'pull_request'`, on a push to or dispatch of the default \
+branch, so it builds a Containerfile that has already been reviewed and \
+merged. A pull request's `sdlc ci` gets no secret and skips this build \
+([tool.sdlc.ci] skip in sdlc.toml). That is C6 as the fleet implements it for \
+every RHSM image, sdlc's docs/socket-audit.md included.
+"""

@@ -1,5 +1,7 @@
 FROM registry.access.redhat.com/ubi10/ubi
 
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+
 LABEL maintainer="fatherlinux <scott.mccarty@crunchtools.com>"
 LABEL description="ExpressVPN + tinyproxy for Playwright egress routing"
 
@@ -18,7 +20,7 @@ COPY etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-10 /etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-10
 # consumer outlives the build.
 RUN --mount=type=secret,id=activation_key \
     --mount=type=secret,id=org_id <<'EOF'
-set -euo pipefail
+set -eu
 subscription-manager register \
     --activationkey="$(cat /run/secrets/activation_key)" \
     --org="$(cat /run/secrets/org_id)"
