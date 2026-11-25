@@ -19,8 +19,16 @@ running() {
 case "$1" in
 start)
     running && exit 0
-    setsid "$DAEMON" </dev/null >/dev/null 2>&1 &
-    echo $! > "$PIDFILE"
+    rm -f "$PIDFILE"
+    # Not `setsid "$DAEMON" &`: a background job of a script starts with
+    # SIGINT ignored, and stop sends SIGINT. setsid -f forks for us instead,
+    # and the child writes its own pid before it becomes the daemon.
+    setsid -f sh -c 'echo $$ > "$1"; exec "$2"' sh "$PIDFILE" "$DAEMON" \
+        </dev/null >/dev/null 2>&1
+    for _ in 1 2 3 4 5 6 7 8 9 10; do
+        [ -s "$PIDFILE" ] && break
+        sleep 0.1
+    done
     ;;
 stop)
     running && kill -INT "$(cat "$PIDFILE")"
