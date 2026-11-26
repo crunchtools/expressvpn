@@ -6,6 +6,8 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-11-26
+
 ### Changed
 
 - **BREAKING: the image is built on UBI 10 instead of Ubuntu 22.04**, so it
