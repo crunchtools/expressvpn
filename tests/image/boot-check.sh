@@ -19,6 +19,8 @@ out=$(env -u CODE /entrypoint.sh 2>&1) || rc=$?
 [ "$rc" -eq 1 ] && grep -q 'CODE environment variable is required' <<<"$out" \
   || fail "expected exit 1 with the CODE error, got rc=$rc: $out"
 
+bash "$(dirname "$0")/resolv-perms.sh" /entrypoint.sh
+
 echo "VPN client binaries and shared libraries"
 export LD_LIBRARY_PATH=/opt/expressvpn/lib
 for b in expressvpn-daemon expressvpnctl expressvpn-lightway expressvpn-openvpn expressvpn-unbound; do
@@ -30,7 +32,7 @@ for b in expressvpn-daemon expressvpnctl expressvpn-lightway expressvpn-openvpn 
 done
 expressvpnctl --help >/dev/null || fail "expressvpnctl --help failed"
 tinyproxy -v || fail "tinyproxy -v failed"
-for t in service getent usermod iptables ip; do command -v $t >/dev/null || fail "missing $t"; done
+for t in service getent usermod iptables ip setpriv stat; do command -v $t >/dev/null || fail "missing $t"; done
 grep -q "^Port 8888" /etc/tinyproxy/tinyproxy.conf || fail "tinyproxy is not on port 8888"
 grep -qx "ConnectPort 443" /etc/tinyproxy/tinyproxy.conf || fail "tinyproxy does not limit CONNECT"
 test -x /etc/init.d/expressvpn-service || fail "missing /etc/init.d/expressvpn-service"
