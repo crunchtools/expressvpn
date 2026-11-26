@@ -6,6 +6,20 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Fixed
+
+- tinyproxy can resolve names again. ExpressVPN leaves `/etc/resolv.conf`
+  0700 root after connecting, and tinyproxy runs as the unprivileged
+  `tinyproxy` user, so every proxied request failed with "Name or service not
+  known" while the entrypoint's DNS check, run as root, passed. The entrypoint
+  now resets it to 0644 before every tunnel DNS probe, and a background loop
+  re-shares it every 5 seconds for the container's life, since the daemon
+  rewrites it on its own reconnects. The DNS check itself now resolves as
+  `tinyproxy` (via `setpriv`, after the `expressvpn` group is added), so this
+  regression fails the start instead of serving a dead proxy.
+  `tests/image/resolv-perms.sh` runs the entrypoint's own logic against a
+  0700 file in the build's boot gate.
+
 ## [2.0.0] - 2026-11-26
 
 ### Changed
