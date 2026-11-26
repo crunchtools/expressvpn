@@ -6,6 +6,31 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Changed
+
+- **BREAKING: the image is built on UBI 10 instead of Ubuntu 22.04**, so it
+  releases through sdlc's image job, which builds only from fleet-signed,
+  Red Hat or Hummingbird parents and refused `FROM ubuntu:22.04` (1.0.2 was
+  tagged with no image). Ports, environment, entrypoint and files are
+  unchanged; anything that reached into the image's userland (apt, Debian
+  paths, Ubuntu's package versions) no longer will. ExpressVPN still comes
+  from its universal installer, now pinned by sha256. tinyproxy comes from
+  EPEL 10 (1.11.2, was Ubuntu's 1.11.0), checked against the vendored EPEL 10
+  key, with Ubuntu's log file, pid file and CONNECT-to-443/563 limit turned
+  back on, since EPEL's config comments them out. The daemon execs iptables
+  for Network Lock and iptables-nft is RHEL AppStream, outside UBI and EPEL,
+  so the build registers with RHSM (`rhsm = true`) and unregisters in the same
+  layer. ExpressVPN's sysvinit script needs Debian's start-stop-daemon, so
+  `etc/init.d/expressvpn-service` is a RHEL equivalent with the same
+  start/stop/status contract. RHEL's `service` wrapper asks systemctl about
+  the unit first, which fails in the container with one line about
+  `OPENSSL_3.4.0` from ExpressVPN's libcrypto; the start goes ahead regardless.
+- `tests/image/boot-check.sh` runs as the Containerfile's last build step
+  instead of as `sdlc ci`'s `boot-gate` check, and `sdlc ci` skips the
+  container checks: an RHSM build cannot be built without the subscription
+  secrets that only the image job holds. It now also checks the init script
+  and the CONNECT port limit.
+
 ## [1.0.2] - 2026-11-25
 
 ### Security
