@@ -79,6 +79,10 @@ done
 
 log "VPN Status: $(expressvpnctl status 2>/dev/null || echo 'unknown')"
 
+# Add tinyproxy user to expressvpn group so Network Lock allows its traffic.
+# Before the DNS check, which resolves as tinyproxy.
+usermod -aG expressvpn tinyproxy 2>/dev/null || true
+
 # A connection that reports Connected can still have a dead tunnel resolver.
 # After every host reboot the daemon said "Connected to usa-chicago" with tun0
 # up and resolv.conf naming the right resolver, and nothing in the container
@@ -86,16 +90,8 @@ log "VPN Status: $(expressvpnctl status 2>/dev/null || echo 'unknown')"
 # spent the week serving an unusable tunnel. Network Lock means resolv.conf
 # can only name the tunnel's own resolver, so a name that resolves here
 # resolved through the tunnel. Prove that before serving anything.
-# Add tinyproxy user to expressvpn group so Network Lock allows its traffic.
-# Before the DNS check, which resolves as tinyproxy.
-usermod -aG expressvpn tinyproxy 2>/dev/null || true
-
 resolver=$(awk '/^nameserver/{print $2; exit}' /etc/resolv.conf 2>/dev/null || true)
 
-# Each probe carries its own timeout and each wait its own deadline. An
-# unresponsive resolver makes getent block for the full resolver timeout, so
-# without both bounds a dead tunnel would stretch startup to minutes and then
-# do it again on every Restart=always cycle.
 # ExpressVPN rewrites resolv.conf 0700 root on connect, and tinyproxy resolves
 # as the unprivileged tinyproxy user: every proxied request failed with "Name
 # or service not known" while root resolved fine. Share it again wherever the
@@ -113,6 +109,11 @@ share_resolv_conf() {
   return 0
 }
 
+# Each probe carries its own timeout and each wait its own deadline. An
+# unresponsive resolver makes getent block for the full resolver timeout, so
+# without both bounds a dead tunnel would stretch startup to minutes and then
+# do it again on every Restart=always cycle.
+#
 # Probe as tinyproxy, not root, so a resolv.conf that user cannot read fails
 # the start instead of serving a dead proxy.
 wait_for_tunnel_dns() {
